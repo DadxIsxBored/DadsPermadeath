@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.1.9
+
+- Rebuilt the preset area as four explicit visual rows.
+- Positioned DadsPermadeath from the left-column preset coordinates instead of the cloned right-column anchors.
+- Positioned Reset to normal on the fourth row beneath DadsPermadeath.
+
 ## 1.1.8
 
 - Enforced the Permadeath and Reset rows after Unity's automatic UI layout pass.
