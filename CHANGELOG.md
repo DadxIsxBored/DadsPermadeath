@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.1.6
+
+- Fixed the post-death black screen by shutting down ZNetScene before ZNet.
+- Replaced the ineffective public no-save logout call with Valheim's complete main-menu transition.
+- Kept save removal and scene transition in the same frame after shutdown.
+
 ## 1.1.5
 
 - Excluded DadsPermadeath from Valheim's three-column preset grid positioning.

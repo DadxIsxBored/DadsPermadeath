@@ -1,12 +1,23 @@
 using System;
 using System.Collections;
 using System.Linq;
+using System.Reflection;
+using HarmonyLib;
 using UnityEngine;
 
 namespace DadsPermadeath;
 
 internal static class PermadeathController
 {
+    private static readonly MethodInfo? ShutdownMethod =
+        AccessTools.Method(typeof(Game), "Shutdown", new[] { typeof(bool) });
+
+    private static readonly MethodInfo? ContinueLogoutMethod =
+        AccessTools.Method(
+            typeof(Game),
+            "ContinueLogout",
+            new[] { typeof(bool), typeof(bool), typeof(bool) });
+
     internal static bool Triggered { get; private set; }
 
     internal static void HandleDeath(Player player)
@@ -62,12 +73,19 @@ internal static class PermadeathController
             yield return null;
         }
 
+        if (ShutdownMethod == null || ContinueLogoutMethod == null)
+        {
+            DadsPermadeathPlugin.Log.LogError(
+                "Permadeath could not locate Valheim's no-save shutdown methods; saves were not removed.");
+            Triggered = false;
+            yield break;
+        }
+
         try
         {
-            if (znet != null)
-            {
-                znet.ShutdownWithoutSave(false);
-            }
+            // Game.Shutdown closes ZNetScene before ZNet. Calling ZNet directly leaves
+            // ZNetScene updating against a stopped network session and blocks scene loading.
+            ShutdownMethod.Invoke(game, new object[] { false });
 
             int characterFiles = DeleteSaveSet(characterFilename, SaveDataType.Character);
             int worldFiles = string.IsNullOrWhiteSpace(worldFilename)
@@ -84,17 +102,15 @@ internal static class PermadeathController
                 DadsPermadeathPlugin.Log.LogInfo(
                     "The active world is hosted remotely; only its host can remove that world save.");
             }
+
+            // shouldExit=true allows Valheim's private no-save continuation to run;
+            // changeToStartScene=true loads the main menu after the completed shutdown.
+            ContinueLogoutMethod.Invoke(game, new object[] { false, true, true });
         }
         catch (Exception exception)
         {
             DadsPermadeathPlugin.Log.LogError($"Permadeath save removal stopped: {exception}");
-        }
-
-        yield return null;
-
-        if (game != null)
-        {
-            game.Logout(false, true);
+            Triggered = false;
         }
     }
 
