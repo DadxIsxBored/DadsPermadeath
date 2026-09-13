@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.1.2
+
+- Fixed the Harmony world-summary patch failing during plugin startup.
+- Changed summary patch arguments to Harmony positional names for Valheim parameter-name compatibility.
+
 ## 1.1.1
 
 - Replaced the Reset-button clone with a standard preset-button clone.

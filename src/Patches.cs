@@ -86,13 +86,13 @@ internal static class ServerOptionsSetKeysPatch
 [HarmonyPatch(typeof(ServerOptionsGUI), nameof(ServerOptionsGUI.GetWorldModifierSummary))]
 internal static class WorldModifierSummaryPatch
 {
-    private static void Prefix(ref System.Collections.Generic.IEnumerable<string> keys, out bool __state)
+    private static void Prefix(ref System.Collections.Generic.IEnumerable<string> __0, out bool __state)
     {
-        __state = PermadeathWorldModifier.RemovePermadeathKeyForSummary(ref keys);
+        __state = PermadeathWorldModifier.RemovePermadeathKeyForSummary(ref __0);
     }
 
-    private static void Postfix(bool compact, string separator, bool __state, ref string __result)
+    private static void Postfix(bool __1, string __2, bool __state, ref string __result)
     {
-        PermadeathWorldModifier.AddPermadeathToSummary(compact, separator, __state, ref __result);
+        PermadeathWorldModifier.AddPermadeathToSummary(__1, __2, __state, ref __result);
     }
 }
