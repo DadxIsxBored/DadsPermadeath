@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.1.7
+
+- Put DadsPermadeath in a dedicated centered row beneath the six built-in presets.
+- Removed both DadsPermadeath and Reset to normal from the parent layout so they cannot be placed beside or over one another.
+- Moved Reset to normal down by one complete preset-row interval beneath DadsPermadeath.
+- Moved Customize and the bottom controls down with the new rows.
+
 ## 1.1.6
 
 - Fixed the post-death black screen by shutting down ZNetScene before ZNet.

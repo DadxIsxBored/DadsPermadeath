@@ -244,11 +244,13 @@ internal static class PermadeathWorldModifier
 
         if (resetButton != null && presetRects.Length >= 4)
         {
+            Canvas.ForceUpdateCanvases();
+
             RectTransform resetRect = resetButton.GetComponent<RectTransform>();
             float width = templateButton.GetComponent<RectTransform>().rect.width;
             float height = templateButton.GetComponent<RectTransform>().rect.height;
             float rowHeight = GetPresetRowHeight(presetRects);
-            Vector3 rowShift = Vector3.down * rowHeight;
+            Vector2 rowShift = Vector2.down * rowHeight;
             RectTransform panelRect = gui.GetComponent<RectTransform>();
             if (panelRect != null && rowHeight > 0f)
             {
@@ -258,31 +260,28 @@ internal static class PermadeathWorldModifier
                 Canvas.ForceUpdateCanvases();
             }
 
-            Vector3 resetPosition = resetRect.position;
-
-            LayoutElement customLayout = customRect.GetComponent<LayoutElement>();
-            if (customLayout == null)
-            {
-                customLayout = customRect.gameObject.AddComponent<LayoutElement>();
-            }
-
-            customLayout.ignoreLayout = true;
+            Vector2 resetPosition = resetRect.anchoredPosition;
+            IgnoreParentLayout(customRect);
+            IgnoreParentLayout(resetRect);
 
             customRect.SetParent(resetRect.parent, false);
             customRect.SetSiblingIndex(resetRect.GetSiblingIndex());
             customRect.anchorMin = resetRect.anchorMin;
             customRect.anchorMax = resetRect.anchorMax;
             customRect.pivot = resetRect.pivot;
-            customRect.position = resetPosition;
+            customRect.anchoredPosition = resetPosition;
             customRect.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, width);
             customRect.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, height);
 
-            resetRect.position = resetPosition + rowShift;
+            // The Permadeath button occupies its own third preset row. Reset is a
+            // separate fourth row, one complete native preset-row interval below it.
+            resetRect.anchoredPosition = resetPosition + rowShift;
 
             RectTransform modifiersRect = gui.m_modifiersRoot.GetComponent<RectTransform>();
             if (modifiersRect != null)
             {
-                modifiersRect.position += rowShift;
+                IgnoreParentLayout(modifiersRect);
+                modifiersRect.anchoredPosition += rowShift;
             }
 
             MoveBottomButtonRow(gui, rowShift, modifiersRect);
@@ -294,6 +293,17 @@ internal static class PermadeathWorldModifier
             float rowHeight = GetPresetRowHeight(presetRects);
             customRect.position += Vector3.down * rowHeight;
         }
+    }
+
+    private static void IgnoreParentLayout(RectTransform rect)
+    {
+        LayoutElement layout = rect.GetComponent<LayoutElement>();
+        if (layout == null)
+        {
+            layout = rect.gameObject.AddComponent<LayoutElement>();
+        }
+
+        layout.ignoreLayout = true;
     }
 
     private static float GetPresetRowHeight(IReadOnlyList<RectTransform> presetRects)
@@ -328,7 +338,7 @@ internal static class PermadeathWorldModifier
 
     private static void MoveBottomButtonRow(
         ServerOptionsGUI gui,
-        Vector3 rowShift,
+        Vector2 rowShift,
         RectTransform? modifiersRect)
     {
         RectTransform doneRect = gui.m_doneButton.GetComponent<RectTransform>();
@@ -347,7 +357,8 @@ internal static class PermadeathWorldModifier
                 buttonRect.parent == doneRect.parent &&
                 Mathf.Abs(buttonRect.localPosition.y - doneRect.localPosition.y) <= rowTolerance)
             {
-                buttonRect.position += rowShift;
+                IgnoreParentLayout(buttonRect);
+                buttonRect.anchoredPosition += rowShift;
             }
         }
     }
