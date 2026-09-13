@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.1.8
+
+- Enforced the Permadeath and Reset rows after Unity's automatic UI layout pass.
+- Kept DadsPermadeath centered in the new third row and Reset centered in the fourth row every rendered frame.
+
 ## 1.1.7
 
 - Put DadsPermadeath in a dedicated centered row beneath the six built-in presets.

@@ -13,7 +13,7 @@ internal static class PermadeathWorldModifier
 
     private const string ButtonText = "DadsPermadeath";
     private const string TipText = "This mode with test your ability to stay alive. If you die, your world and character will be deleted and you will be sent back to the main menu.";
-    private const string PopupText = "You have selected Permadeath, if you die, yourselected world and character will be deleted. Are you sure you want to proceed?";
+    private const string PopupText = "You have selected Permadeath, if you die, your selected world and character will be deleted. Are you sure you want to proceed?";
 
     private static ServerOptionsGUI? _gui;
     private static World? _world;
@@ -250,16 +250,7 @@ internal static class PermadeathWorldModifier
             float width = templateButton.GetComponent<RectTransform>().rect.width;
             float height = templateButton.GetComponent<RectTransform>().rect.height;
             float rowHeight = GetPresetRowHeight(presetRects);
-            Vector2 rowShift = Vector2.down * rowHeight;
             RectTransform panelRect = gui.GetComponent<RectTransform>();
-            if (panelRect != null && rowHeight > 0f)
-            {
-                panelRect.SetSizeWithCurrentAnchors(
-                    RectTransform.Axis.Vertical,
-                    panelRect.rect.height + rowHeight);
-                Canvas.ForceUpdateCanvases();
-            }
-
             Vector2 resetPosition = resetRect.anchoredPosition;
             IgnoreParentLayout(customRect);
             IgnoreParentLayout(resetRect);
@@ -269,22 +260,34 @@ internal static class PermadeathWorldModifier
             customRect.anchorMin = resetRect.anchorMin;
             customRect.anchorMax = resetRect.anchorMax;
             customRect.pivot = resetRect.pivot;
-            customRect.anchoredPosition = resetPosition;
             customRect.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, width);
             customRect.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, height);
-
-            // The Permadeath button occupies its own third preset row. Reset is a
-            // separate fourth row, one complete native preset-row interval below it.
-            resetRect.anchoredPosition = resetPosition + rowShift;
 
             RectTransform modifiersRect = gui.m_modifiersRoot.GetComponent<RectTransform>();
             if (modifiersRect != null)
             {
                 IgnoreParentLayout(modifiersRect);
-                modifiersRect.anchoredPosition += rowShift;
             }
 
-            MoveBottomButtonRow(gui, rowShift, modifiersRect);
+            RectTransform[] bottomRects = GetBottomButtonRow(gui, modifiersRect);
+            foreach (RectTransform bottomRect in bottomRects)
+            {
+                IgnoreParentLayout(bottomRect);
+            }
+
+            PermadeathLayoutController controller =
+                gui.gameObject.GetComponent<PermadeathLayoutController>() ??
+                gui.gameObject.AddComponent<PermadeathLayoutController>();
+            controller.Configure(
+                panelRect,
+                customRect,
+                resetRect,
+                modifiersRect,
+                bottomRects,
+                resetPosition,
+                rowHeight,
+                width,
+                height);
             return;
         }
 
@@ -336,31 +339,26 @@ internal static class PermadeathWorldModifier
         return rowHeight;
     }
 
-    private static void MoveBottomButtonRow(
+    private static RectTransform[] GetBottomButtonRow(
         ServerOptionsGUI gui,
-        Vector2 rowShift,
         RectTransform? modifiersRect)
     {
         RectTransform doneRect = gui.m_doneButton.GetComponent<RectTransform>();
         if (doneRect == null ||
             (modifiersRect != null && doneRect.IsChildOf(modifiersRect)))
         {
-            return;
+            return Array.Empty<RectTransform>();
         }
 
         float rowTolerance = Mathf.Max(1f, doneRect.rect.height * 0.25f);
-        Button[] buttons = gui.GetComponentsInChildren<Button>(true);
-        foreach (Button button in buttons)
-        {
-            RectTransform buttonRect = button.GetComponent<RectTransform>();
-            if (buttonRect != null &&
-                buttonRect.parent == doneRect.parent &&
-                Mathf.Abs(buttonRect.localPosition.y - doneRect.localPosition.y) <= rowTolerance)
-            {
-                IgnoreParentLayout(buttonRect);
-                buttonRect.anchoredPosition += rowShift;
-            }
-        }
+        return gui.GetComponentsInChildren<Button>(true)
+            .Select(button => button.GetComponent<RectTransform>())
+            .Where(rect => rect != null &&
+                           rect.parent == doneRect.parent &&
+                           Mathf.Abs(rect.localPosition.y - doneRect.localPosition.y) <= rowTolerance)
+            .Cast<RectTransform>()
+            .Distinct()
+            .ToArray();
     }
 
     private static bool IsResetButton(Button button)
@@ -378,5 +376,91 @@ internal static class PermadeathWorldModifier
     private static void RemoveKey(List<string> keys)
     {
         keys.RemoveAll(key => string.Equals(key, GlobalKey, StringComparison.OrdinalIgnoreCase));
+    }
+}
+
+internal sealed class PermadeathLayoutController : MonoBehaviour
+{
+    private RectTransform? _panel;
+    private RectTransform? _permadeath;
+    private RectTransform? _reset;
+    private RectTransform? _modifiers;
+    private RectTransform[] _bottomRects = Array.Empty<RectTransform>();
+    private Vector2[] _bottomPositions = Array.Empty<Vector2>();
+    private Vector2 _permadeathPosition;
+    private Vector2 _resetPosition;
+    private Vector2 _modifiersPosition;
+    private float _panelHeight;
+    private float _rowHeight;
+    private float _buttonWidth;
+    private float _buttonHeight;
+
+    internal void Configure(
+        RectTransform? panel,
+        RectTransform permadeath,
+        RectTransform reset,
+        RectTransform? modifiers,
+        RectTransform[] bottomRects,
+        Vector2 resetPosition,
+        float rowHeight,
+        float buttonWidth,
+        float buttonHeight)
+    {
+        _panel = panel;
+        _permadeath = permadeath;
+        _reset = reset;
+        _modifiers = modifiers;
+        _bottomRects = bottomRects;
+        _bottomPositions = bottomRects.Select(rect => rect.anchoredPosition).ToArray();
+        _permadeathPosition = resetPosition;
+        _resetPosition = resetPosition + Vector2.down * rowHeight;
+        _modifiersPosition = modifiers == null
+            ? Vector2.zero
+            : modifiers.anchoredPosition + Vector2.down * rowHeight;
+        _panelHeight = panel == null ? 0f : panel.rect.height;
+        _rowHeight = rowHeight;
+        _buttonWidth = buttonWidth;
+        _buttonHeight = buttonHeight;
+
+        ApplyLayout();
+    }
+
+    private void LateUpdate()
+    {
+        ApplyLayout();
+    }
+
+    private void ApplyLayout()
+    {
+        if (_permadeath == null || _reset == null || _rowHeight <= 0f)
+        {
+            return;
+        }
+
+        if (_panel != null)
+        {
+            _panel.SetSizeWithCurrentAnchors(
+                RectTransform.Axis.Vertical,
+                _panelHeight + _rowHeight);
+        }
+
+        _permadeath.anchoredPosition = _permadeathPosition;
+        _permadeath.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, _buttonWidth);
+        _permadeath.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, _buttonHeight);
+        _reset.anchoredPosition = _resetPosition;
+
+        if (_modifiers != null)
+        {
+            _modifiers.anchoredPosition = _modifiersPosition;
+        }
+
+        Vector2 rowShift = Vector2.down * _rowHeight;
+        for (int index = 0; index < _bottomRects.Length; index++)
+        {
+            if (_bottomRects[index] != null)
+            {
+                _bottomRects[index].anchoredPosition = _bottomPositions[index] + rowShift;
+            }
+        }
     }
 }
