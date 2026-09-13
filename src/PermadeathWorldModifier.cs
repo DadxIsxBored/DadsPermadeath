@@ -32,7 +32,9 @@ internal static class PermadeathWorldModifier
 
         KeyButton? templateKeyButton = gui.m_presetsRoot
             .GetComponentsInChildren<KeyButton>(true)
-            .Where(button => button.m_preset != WorldPresets.Normal)
+            .Where(button => button.m_preset != WorldPresets.Default &&
+                             button.m_preset != WorldPresets.Normal &&
+                             button.m_preset != WorldPresets.Custom)
             .OrderBy(button => button.transform.GetSiblingIndex())
             .LastOrDefault();
         Button? templateButton = templateKeyButton?.GetComponentInParent<Button>();
@@ -93,17 +95,6 @@ internal static class PermadeathWorldModifier
         world.m_startingKeysChanged = true;
     }
 
-    internal static void ClearSelection()
-    {
-        _selected = false;
-        UpdateButtonVisual();
-    }
-
-    internal static bool IsPermadeathButton(KeyButton button)
-    {
-        return button == _keyButton;
-    }
-
     internal static bool IsActiveInCurrentWorld()
     {
         ZoneSystem? zoneSystem = ZoneSystem.instance;
@@ -114,6 +105,47 @@ internal static class PermadeathWorldModifier
 
         World? world = ZNet.instance?.GetWorld();
         return world != null && ContainsKey(world.m_startingGlobalKeys);
+    }
+
+    internal static bool RemovePermadeathKeyForSummary(ref IEnumerable<string> keys)
+    {
+        List<string> filteredKeys = keys.ToList();
+        bool containedPermadeath = ContainsKey(filteredKeys);
+        if (containedPermadeath)
+        {
+            RemoveKey(filteredKeys);
+            keys = filteredKeys;
+        }
+
+        return containedPermadeath;
+    }
+
+    internal static void AddPermadeathToSummary(
+        bool compact,
+        string separator,
+        bool containedPermadeath,
+        ref string summary)
+    {
+        if (!containedPermadeath)
+        {
+            return;
+        }
+
+        if (string.IsNullOrEmpty(summary))
+        {
+            summary = "Permadeath";
+            return;
+        }
+
+        if (compact)
+        {
+            summary = string.Equals(summary, "$menu_modifier_custom", StringComparison.Ordinal)
+                ? summary
+                : "Permadeath+";
+            return;
+        }
+
+        summary = "Permadeath" + separator + summary;
     }
 
     private static void ShowConfirmation()
@@ -142,7 +174,6 @@ internal static class PermadeathWorldModifier
             return;
         }
 
-        _gui.SetPreset(_world, WorldPresets.Normal);
         _selected = true;
         _gui.m_toolTipText.text = TipText;
         UpdateButtonVisual();

@@ -83,23 +83,16 @@ internal static class ServerOptionsSetKeysPatch
     }
 }
 
-[HarmonyPatch(typeof(ServerOptionsGUI), nameof(ServerOptionsGUI.OnPresetButton))]
-internal static class VanillaPresetButtonPatch
+[HarmonyPatch(typeof(ServerOptionsGUI), nameof(ServerOptionsGUI.GetWorldModifierSummary))]
+internal static class WorldModifierSummaryPatch
 {
-    private static void Prefix(KeyButton button)
+    private static void Prefix(ref System.Collections.Generic.IEnumerable<string> keys, out bool __state)
     {
-        if (!PermadeathWorldModifier.IsPermadeathButton(button))
-        {
-            PermadeathWorldModifier.ClearSelection();
-        }
+        __state = PermadeathWorldModifier.RemovePermadeathKeyForSummary(ref keys);
     }
-}
 
-[HarmonyPatch(typeof(ServerOptionsGUI), nameof(ServerOptionsGUI.OnCustomValueChanged))]
-internal static class CustomModifierPatch
-{
-    private static void Prefix()
+    private static void Postfix(bool compact, string separator, bool __state, ref string __result)
     {
-        PermadeathWorldModifier.ClearSelection();
+        PermadeathWorldModifier.AddPermadeathToSummary(compact, separator, __state, ref __result);
     }
 }

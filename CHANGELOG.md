@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.1.1
+
+- Replaced the Reset-button clone with a standard preset-button clone.
+- Integrated DadsPermadeath and Reset to normal as a centered two-button third row.
+- Retained other preset and custom modifier settings when Permadeath is confirmed.
+- Added Permadeath, Permadeath+, and Custom modifiers world-list summaries.
+
 ## 1.1.0
 
 - Added a DadsPermadeath preset button to the World Modifiers screen.
