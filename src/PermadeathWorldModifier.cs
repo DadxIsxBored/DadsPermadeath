@@ -247,8 +247,8 @@ internal static class PermadeathWorldModifier
             RectTransform resetRect = resetButton.GetComponent<RectTransform>();
             float width = templateButton.GetComponent<RectTransform>().rect.width;
             float height = templateButton.GetComponent<RectTransform>().rect.height;
-            Vector3 rowShift = presetRects[3].position - presetRects[0].position;
-            float rowHeight = Mathf.Abs(rowShift.y);
+            float rowHeight = GetPresetRowHeight(presetRects);
+            Vector3 rowShift = Vector3.down * rowHeight;
             RectTransform panelRect = gui.GetComponent<RectTransform>();
             if (panelRect != null && rowHeight > 0f)
             {
@@ -256,10 +256,17 @@ internal static class PermadeathWorldModifier
                     RectTransform.Axis.Vertical,
                     panelRect.rect.height + rowHeight);
                 Canvas.ForceUpdateCanvases();
-                rowShift = presetRects[3].position - presetRects[0].position;
             }
 
             Vector3 resetPosition = resetRect.position;
+
+            LayoutElement customLayout = customRect.GetComponent<LayoutElement>();
+            if (customLayout == null)
+            {
+                customLayout = customRect.gameObject.AddComponent<LayoutElement>();
+            }
+
+            customLayout.ignoreLayout = true;
 
             customRect.SetParent(resetRect.parent, false);
             customRect.SetSiblingIndex(resetRect.GetSiblingIndex());
@@ -284,9 +291,39 @@ internal static class PermadeathWorldModifier
 
         if (presetRects.Length >= 4)
         {
-            Vector2 rowStep = presetRects[3].anchoredPosition - presetRects[0].anchoredPosition;
-            customRect.anchoredPosition = presetRects[3].anchoredPosition + rowStep;
+            float rowHeight = GetPresetRowHeight(presetRects);
+            customRect.position += Vector3.down * rowHeight;
         }
+    }
+
+    private static float GetPresetRowHeight(IReadOnlyList<RectTransform> presetRects)
+    {
+        float closestColumnDistance = float.MaxValue;
+        float rowHeight = 0f;
+
+        for (int first = 0; first < presetRects.Count; first++)
+        {
+            for (int second = first + 1; second < presetRects.Count; second++)
+            {
+                Vector3 delta = presetRects[second].position - presetRects[first].position;
+                float verticalDistance = Mathf.Abs(delta.y);
+                if (verticalDistance < 1f)
+                {
+                    continue;
+                }
+
+                float columnDistance = Mathf.Abs(delta.x);
+                if (columnDistance < closestColumnDistance ||
+                    (Mathf.Approximately(columnDistance, closestColumnDistance) &&
+                     (rowHeight <= 0f || verticalDistance < rowHeight)))
+                {
+                    closestColumnDistance = columnDistance;
+                    rowHeight = verticalDistance;
+                }
+            }
+        }
+
+        return rowHeight;
     }
 
     private static void MoveBottomButtonRow(

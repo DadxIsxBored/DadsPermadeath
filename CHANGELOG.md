@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.1.5
+
+- Excluded DadsPermadeath from Valheim's three-column preset grid positioning.
+- Centered DadsPermadeath at Reset to normal's original position.
+- Calculated preset spacing from matching columns instead of sibling order.
+- Restricted Reset, Customize, and bottom-control movement to the vertical axis.
+
 ## 1.1.4
 
 - Added a dedicated centered DadsPermadeath preset row.
