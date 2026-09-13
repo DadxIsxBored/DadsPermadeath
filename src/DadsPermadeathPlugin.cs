@@ -10,7 +10,7 @@ public sealed class DadsPermadeathPlugin : BaseUnityPlugin
 {
     public const string PluginGuid = "com.dadisbored.dadspermadeath";
     public const string PluginName = "DadsPermadeath";
-    public const string PluginVersion = "1.1.9";
+    public const string PluginVersion = "1.0.0";
 
     internal static DadsPermadeathPlugin Instance = null!;
     internal static ConfigEntry<bool> ModEnabled = null!;

@@ -225,9 +225,12 @@ internal static class PermadeathWorldModifier
         RectTransform customRect,
         Button templateButton)
     {
-        Button? resetButton = gui.GetComponentsInChildren<Button>(true)
-            .Where(button => button != _button && button != templateButton)
-            .FirstOrDefault(IsResetButton);
+        KeyButton? resetKeyButton = gui.m_presetsRoot
+            .GetComponentsInChildren<KeyButton>(true)
+            .FirstOrDefault(button => button != _keyButton &&
+                                      (button.m_preset == WorldPresets.Default ||
+                                       button.m_preset == WorldPresets.Normal));
+        Button? resetButton = resetKeyButton?.GetComponentInParent<Button>();
 
         RectTransform[] presetRects = gui.m_presetsRoot
             .GetComponentsInChildren<KeyButton>(true)
@@ -268,7 +271,11 @@ internal static class PermadeathWorldModifier
                 rowHeight = GetPresetRowHeight(presetRects);
             }
 
-            RectTransform panelRect = gui.GetComponent<RectTransform>();
+            RectTransform? panelRect = gui.transform.Find("panel") as RectTransform;
+            if (panelRect == null)
+            {
+                panelRect = gui.GetComponent<RectTransform>();
+            }
             Vector3 permadeathPosition = secondRowLeft.position + worldRowShift;
             Vector3 resetPosition = resetRect.position + worldRowShift;
             IgnoreParentLayout(customRect);
@@ -306,14 +313,13 @@ internal static class PermadeathWorldModifier
                 rowHeight,
                 width,
                 height);
+            DadsPermadeathPlugin.Log.LogInfo(
+                $"Four-row preset layout applied using reset button '{resetButton.name}'.");
             return;
         }
 
-        if (presetRects.Length >= 4)
-        {
-            float rowHeight = GetPresetRowHeight(presetRects);
-            customRect.position += Vector3.down * rowHeight;
-        }
+        DadsPermadeathPlugin.Log.LogError(
+            "DadsPermadeath could not locate Valheim's Default/Normal reset preset; four-row layout was not applied.");
     }
 
     private static void IgnoreParentLayout(RectTransform rect)
@@ -377,13 +383,6 @@ internal static class PermadeathWorldModifier
             .Cast<RectTransform>()
             .Distinct()
             .ToArray();
-    }
-
-    private static bool IsResetButton(Button button)
-    {
-        TMP_Text? label = button.GetComponentInChildren<TMP_Text>(true);
-        return button.name.IndexOf("reset", StringComparison.OrdinalIgnoreCase) >= 0 ||
-               (label != null && label.text.IndexOf("reset", StringComparison.OrdinalIgnoreCase) >= 0);
     }
 
     private static bool ContainsKey(IEnumerable<string> keys)
