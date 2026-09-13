@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.1.3
+
+- Replaced manual third-row positioning with a Unity horizontal layout group.
+- Standardized DadsPermadeath and Reset to normal to the same preset-button dimensions.
+- Aligned both buttons through the World Modifiers UI layout hierarchy.
+
 ## 1.1.2
 
 - Fixed the Harmony world-summary patch failing during plugin startup.

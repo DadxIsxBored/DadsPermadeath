@@ -235,19 +235,43 @@ internal static class PermadeathWorldModifier
         {
             RectTransform resetRect = resetButton.GetComponent<RectTransform>();
             float width = templateButton.GetComponent<RectTransform>().rect.width;
+            float height = Mathf.Max(templateButton.GetComponent<RectTransform>().rect.height, resetRect.rect.height);
             float spacing = 12f;
-            Vector2 center = resetRect.anchoredPosition;
+            Transform originalParent = resetRect.parent;
+            int originalSiblingIndex = resetRect.GetSiblingIndex();
+            Vector3 originalLocalPosition = resetRect.localPosition;
 
-            customRect.SetParent(resetRect.parent, false);
-            customRect.SetSiblingIndex(resetRect.GetSiblingIndex());
-            customRect.anchorMin = resetRect.anchorMin;
-            customRect.anchorMax = resetRect.anchorMax;
-            customRect.pivot = resetRect.pivot;
-            customRect.sizeDelta = new Vector2(width, customRect.sizeDelta.y);
-            customRect.anchoredPosition = new Vector2(center.x - (width + spacing) * 0.5f, center.y);
+            GameObject rowObject = new GameObject(
+                "DadsPermadeathPresetRow",
+                typeof(RectTransform),
+                typeof(HorizontalLayoutGroup));
+            RectTransform rowRect = rowObject.GetComponent<RectTransform>();
+            rowRect.SetParent(originalParent, false);
+            rowRect.SetSiblingIndex(originalSiblingIndex);
+            rowRect.anchorMin = new Vector2(0.5f, 0.5f);
+            rowRect.anchorMax = new Vector2(0.5f, 0.5f);
+            rowRect.pivot = new Vector2(0.5f, 0.5f);
+            rowRect.localPosition = originalLocalPosition;
+            rowRect.localRotation = Quaternion.identity;
+            rowRect.localScale = Vector3.one;
+            rowRect.sizeDelta = new Vector2(width * 2f + spacing, height);
 
-            resetRect.sizeDelta = new Vector2(width, resetRect.sizeDelta.y);
-            resetRect.anchoredPosition = new Vector2(center.x + (width + spacing) * 0.5f, center.y);
+            HorizontalLayoutGroup layout = rowObject.GetComponent<HorizontalLayoutGroup>();
+            layout.padding = new RectOffset(0, 0, 0, 0);
+            layout.spacing = spacing;
+            layout.childAlignment = TextAnchor.MiddleCenter;
+            layout.childControlWidth = true;
+            layout.childControlHeight = true;
+            layout.childForceExpandWidth = false;
+            layout.childForceExpandHeight = false;
+
+            customRect.SetParent(rowRect, false);
+            customRect.SetSiblingIndex(0);
+            resetRect.SetParent(rowRect, false);
+            resetRect.SetSiblingIndex(1);
+
+            ConfigureRowButton(customRect, width, height);
+            ConfigureRowButton(resetRect, width, height);
             return;
         }
 
@@ -266,6 +290,22 @@ internal static class PermadeathWorldModifier
             Vector2 rowStep = presetRects[3].anchoredPosition - presetRects[0].anchoredPosition;
             customRect.anchoredPosition = presetRects[3].anchoredPosition + rowStep;
         }
+    }
+
+    private static void ConfigureRowButton(RectTransform buttonRect, float width, float height)
+    {
+        LayoutElement layoutElement = buttonRect.GetComponent<LayoutElement>();
+        if (layoutElement == null)
+        {
+            layoutElement = buttonRect.gameObject.AddComponent<LayoutElement>();
+        }
+
+        layoutElement.minWidth = width;
+        layoutElement.preferredWidth = width;
+        layoutElement.flexibleWidth = 0f;
+        layoutElement.minHeight = height;
+        layoutElement.preferredHeight = height;
+        layoutElement.flexibleHeight = 0f;
     }
 
     private static bool IsResetButton(Button button)

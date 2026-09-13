@@ -1,6 +1,6 @@
 {
   "name": "DadsPermadeath",
-  "version_number": "1.1.2",
+  "version_number": "1.1.3",
   "website_url": "https://github.com/DadxIsxBored/DadsPermadeath",
   "description": "Deletes the active character and locally hosted world on death, then returns to the main menu.",
   "dependencies": [
