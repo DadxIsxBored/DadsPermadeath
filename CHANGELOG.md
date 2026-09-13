@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.1.4
+
+- Added a dedicated centered DadsPermadeath preset row.
+- Moved Reset to normal down by one complete preset-row interval.
+- Moved Customize and the bottom controls down by the same interval.
+- Increased the World Modifiers panel height to contain the added row.
+- Changed every non-default Permadeath modifier combination to display as Permadeath+.
+
 ## 1.1.3
 
 - Replaced manual third-row positioning with a Unity horizontal layout group.

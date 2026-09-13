@@ -8,7 +8,7 @@ DadsPermadeath adds a confirmed Permadeath preset to Valheim's World Modifiers s
 - Requires a Yes or No confirmation before selection.
 - Saves Permadeath as a world-specific modifier only when `Done` is pressed.
 - Keeps the selected standard preset and custom settings when Permadeath is confirmed.
-- Shows `Permadeath`, `Permadeath+`, or `Custom modifiers` in the world list using Valheim's standard summary rules.
+- Shows `Permadeath` for default settings and `Permadeath+` for any additional modifier; worlds without Permadeath retain Valheim's standard summaries.
 - Selecting No clears Permadeath and restores the Normal preset.
 - Activates only for the local player's death in a world with the modifier.
 - Deletes local and cloud variants exposed through Valheim's save system.

@@ -72,7 +72,7 @@ internal static class PermadeathWorldModifier
         _button.onClick.AddListener(ShowConfirmation);
         _normalColors = _button.colors;
 
-        PlaceBesideResetButton(gui, clone.GetComponent<RectTransform>(), templateButton);
+        IntegratePresetRows(gui, clone.GetComponent<RectTransform>(), templateButton);
         UpdateButtonVisual();
     }
 
@@ -139,9 +139,7 @@ internal static class PermadeathWorldModifier
 
         if (compact)
         {
-            summary = string.Equals(summary, "$menu_modifier_custom", StringComparison.Ordinal)
-                ? summary
-                : "Permadeath+";
+            summary = "Permadeath+";
             return;
         }
 
@@ -222,7 +220,7 @@ internal static class PermadeathWorldModifier
             : Localization.instance.Localize(normalButton.m_toolTip);
     }
 
-    private static void PlaceBesideResetButton(
+    private static void IntegratePresetRows(
         ServerOptionsGUI gui,
         RectTransform customRect,
         Button templateButton)
@@ -231,59 +229,58 @@ internal static class PermadeathWorldModifier
             .Where(button => button != _button && button != templateButton)
             .FirstOrDefault(IsResetButton);
 
-        if (resetButton != null)
-        {
-            RectTransform resetRect = resetButton.GetComponent<RectTransform>();
-            float width = templateButton.GetComponent<RectTransform>().rect.width;
-            float height = Mathf.Max(templateButton.GetComponent<RectTransform>().rect.height, resetRect.rect.height);
-            float spacing = 12f;
-            Transform originalParent = resetRect.parent;
-            int originalSiblingIndex = resetRect.GetSiblingIndex();
-            Vector3 originalLocalPosition = resetRect.localPosition;
-
-            GameObject rowObject = new GameObject(
-                "DadsPermadeathPresetRow",
-                typeof(RectTransform),
-                typeof(HorizontalLayoutGroup));
-            RectTransform rowRect = rowObject.GetComponent<RectTransform>();
-            rowRect.SetParent(originalParent, false);
-            rowRect.SetSiblingIndex(originalSiblingIndex);
-            rowRect.anchorMin = new Vector2(0.5f, 0.5f);
-            rowRect.anchorMax = new Vector2(0.5f, 0.5f);
-            rowRect.pivot = new Vector2(0.5f, 0.5f);
-            rowRect.localPosition = originalLocalPosition;
-            rowRect.localRotation = Quaternion.identity;
-            rowRect.localScale = Vector3.one;
-            rowRect.sizeDelta = new Vector2(width * 2f + spacing, height);
-
-            HorizontalLayoutGroup layout = rowObject.GetComponent<HorizontalLayoutGroup>();
-            layout.padding = new RectOffset(0, 0, 0, 0);
-            layout.spacing = spacing;
-            layout.childAlignment = TextAnchor.MiddleCenter;
-            layout.childControlWidth = true;
-            layout.childControlHeight = true;
-            layout.childForceExpandWidth = false;
-            layout.childForceExpandHeight = false;
-
-            customRect.SetParent(rowRect, false);
-            customRect.SetSiblingIndex(0);
-            resetRect.SetParent(rowRect, false);
-            resetRect.SetSiblingIndex(1);
-
-            ConfigureRowButton(customRect, width, height);
-            ConfigureRowButton(resetRect, width, height);
-            return;
-        }
-
         RectTransform[] presetRects = gui.m_presetsRoot
             .GetComponentsInChildren<KeyButton>(true)
-            .Where(button => button != _keyButton)
+            .Where(button => button != _keyButton &&
+                             button.m_preset != WorldPresets.Default &&
+                             button.m_preset != WorldPresets.Normal &&
+                             button.m_preset != WorldPresets.Custom)
             .Select(button => button.GetComponentInParent<Button>()?.GetComponent<RectTransform>())
             .Where(rect => rect != null)
             .Cast<RectTransform>()
             .Distinct()
             .OrderBy(rect => rect.GetSiblingIndex())
             .ToArray();
+
+        if (resetButton != null && presetRects.Length >= 4)
+        {
+            RectTransform resetRect = resetButton.GetComponent<RectTransform>();
+            float width = templateButton.GetComponent<RectTransform>().rect.width;
+            float height = templateButton.GetComponent<RectTransform>().rect.height;
+            Vector3 rowShift = presetRects[3].position - presetRects[0].position;
+            float rowHeight = Mathf.Abs(rowShift.y);
+            RectTransform panelRect = gui.GetComponent<RectTransform>();
+            if (panelRect != null && rowHeight > 0f)
+            {
+                panelRect.SetSizeWithCurrentAnchors(
+                    RectTransform.Axis.Vertical,
+                    panelRect.rect.height + rowHeight);
+                Canvas.ForceUpdateCanvases();
+                rowShift = presetRects[3].position - presetRects[0].position;
+            }
+
+            Vector3 resetPosition = resetRect.position;
+
+            customRect.SetParent(resetRect.parent, false);
+            customRect.SetSiblingIndex(resetRect.GetSiblingIndex());
+            customRect.anchorMin = resetRect.anchorMin;
+            customRect.anchorMax = resetRect.anchorMax;
+            customRect.pivot = resetRect.pivot;
+            customRect.position = resetPosition;
+            customRect.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, width);
+            customRect.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, height);
+
+            resetRect.position = resetPosition + rowShift;
+
+            RectTransform modifiersRect = gui.m_modifiersRoot.GetComponent<RectTransform>();
+            if (modifiersRect != null)
+            {
+                modifiersRect.position += rowShift;
+            }
+
+            MoveBottomButtonRow(gui, rowShift, modifiersRect);
+            return;
+        }
 
         if (presetRects.Length >= 4)
         {
@@ -292,20 +289,30 @@ internal static class PermadeathWorldModifier
         }
     }
 
-    private static void ConfigureRowButton(RectTransform buttonRect, float width, float height)
+    private static void MoveBottomButtonRow(
+        ServerOptionsGUI gui,
+        Vector3 rowShift,
+        RectTransform? modifiersRect)
     {
-        LayoutElement layoutElement = buttonRect.GetComponent<LayoutElement>();
-        if (layoutElement == null)
+        RectTransform doneRect = gui.m_doneButton.GetComponent<RectTransform>();
+        if (doneRect == null ||
+            (modifiersRect != null && doneRect.IsChildOf(modifiersRect)))
         {
-            layoutElement = buttonRect.gameObject.AddComponent<LayoutElement>();
+            return;
         }
 
-        layoutElement.minWidth = width;
-        layoutElement.preferredWidth = width;
-        layoutElement.flexibleWidth = 0f;
-        layoutElement.minHeight = height;
-        layoutElement.preferredHeight = height;
-        layoutElement.flexibleHeight = 0f;
+        float rowTolerance = Mathf.Max(1f, doneRect.rect.height * 0.25f);
+        Button[] buttons = gui.GetComponentsInChildren<Button>(true);
+        foreach (Button button in buttons)
+        {
+            RectTransform buttonRect = button.GetComponent<RectTransform>();
+            if (buttonRect != null &&
+                buttonRect.parent == doneRect.parent &&
+                Mathf.Abs(buttonRect.localPosition.y - doneRect.localPosition.y) <= rowTolerance)
+            {
+                buttonRect.position += rowShift;
+            }
+        }
     }
 
     private static bool IsResetButton(Button button)
