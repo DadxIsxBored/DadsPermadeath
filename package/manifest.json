@@ -1,0 +1,9 @@
+{
+  "name": "DadsPermadeath",
+  "version_number": "1.1.0",
+  "website_url": "https://github.com/DadxIsxBored/DadsPermadeath",
+  "description": "Deletes the active character and locally hosted world on death, then returns to the main menu.",
+  "dependencies": [
+    "denikson-BepInExPack_Valheim-5.4.2350"
+  ]
+}
